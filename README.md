@@ -2,27 +2,181 @@
 
 Aplikasi **Desktop** yang mengunduh dokumen Scribd sebagai PDF.
 Frontend berupa **React** (Vite), backend berupa **FastAPI** yang menjalankan
-script Python (Selenium + Chrome + CDP) Anda.
+script Python (Selenium + Chrome + CDP).
 
 ---
 
 ## Struktur Folder
 
-```
+```txt
 scribd_downloader/
-├── server/
-│   ├── main.py                 # FastAPI + subprocess
-│   ├── requirements.txt        # Dependencies Python
-│   ├── scribd_downloader.py    # Script Python asli (Selenium/Chrome)
-│   └── downloads/              # (Otomatis dibuat) Tempat simpan PDF
+├── client/                       # Frontend React (Vite)
+│   ├── dist/                     # (generated) build React
+│   ├── src/
+│   │   ├── main.jsx
+│   │   └── App.jsx
+│   ├── package.json
+│   └── vite.config.js
 │
-└── client/
-    ├── package.json
-    ├── vite.config.js
-    ├── index.html
-    └── src/
-        ├── main.jsx
-        └── App.jsx
+└── server/
+    ├── main.py                   # FastAPI + subprocess
+    ├── requirements.txt          # Dependencies Python
+    ├── scribd_downloader.py      # Script Python asli (Selenium/Chrome)
+    ├── wsgi.py                   # (Optional) WSGI entry for PythonAnywhere
+    ├── downloads/                # (generated) Tempat simpan PDF
+    └── __pycache__/
+```
+
+---
+
+## Prasyarat
+
+### 1. Python 3.10+
+
+```bash
+python --version
+```
+
+### 2. Chrome + ChromeDriver
+
+- **Google Chrome** terinstall
+- **ChromeDriver** (versi sesuai Chrome) terinstall
+- Tambahkan ChromeDriver ke `PATH` environment
+
+Cek ChromeDriver: `chromedriver --version`
+
+### 3. Node.js 18+
+
+```bash
+node --version
+npm --version
+```
+
+---
+
+## Install Dependencies
+
+```bash
+cd server
+pip install -r requirements.txt
+
+cd ../client
+npm install
+```
+
+---
+
+## Cara Menjalankan
+
+### Mode Development (localhost)
+
+```bash
+# Terminal 1 - Backend
+cd server
+python main.py
+# → http://localhost:8000
+
+# Terminal 2 - Frontend
+cd ../client
+npm run dev
+# → http://localhost:5173
+```
+
+---
+
+## Cara Menjalankan (Production / Docker)
+
+```bash
+# Build image
+docker build -t scribd-pdf-converter .
+
+# Run container
+docker run -d \
+  --name scribd-pdf \
+  -p 8000:8000 \
+  --env SCRIBD_HEADLESS=1 \
+  --env SCRIBD_CDP_TIMEOUT=600 \
+  scribd-pdf-converter
+```
+
+Akses: `http://localhost:8000`
+
+---
+
+## Cara Deploy ke SnapDeploy
+
+```bash
+# 1. Build image
+docker build -t scribd-pdf-converter .
+
+# 2. Tag & push (ganti username dengan GitHub/GitLab Anda)
+docker tag scribd-pdf-converter yourname/scribd-pdf-converter:latest
+docker push yourname/scribd-pdf-converter
+
+# 3. Di SnapDeploy dashboard:
+#    - Pilih "Deploy existing image"
+#    - Masukkan repo/image URL Anda
+#    - Set env var: SCRIBD_HEADLESS=1
+#    - Deploy
+```
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| `POST` | `/api/convert` | Mulai konversi (body: `{ url }`) |
+| `GET`  | `/api/status?task_id=xxx` | Cek status konversi |
+| `GET`  | `/api/download/{task_id}` | Download PDF hasil konversi |
+| `GET`  | `/api/files` | Daftar PDF yang tersimpan |
+| `GET`  | `/api/downloads/{folder}/{filename}` | Download file PDF |
+| `DELETE` | `/api/files/{folder}/{filename}` | Hapus file PDF |
+
+---
+
+## Status Task
+
+| Status | Arti |
+|--------|------|
+| `queued` | Menunggu diproses |
+| `running` | Sedang berjalan |
+| `completed` | Selesai, PDF siap diunduh |
+| `failed` | Gagal, lihat pesan error |
+
+---
+
+## Tips
+
+- **Dokumen panjang** → butuh waktu lebih lama
+- **Overlay/cookie banner** → script otomatis menyembunyikannya
+- **ChromeDriver** → pastikan versi cocok dengan Chrome Anda
+
+---
+
+## Troubleshooting
+
+### `ModuleNotFoundError: No module named 'pypdf'`
+```bash
+pip install pypdf
+```
+
+### Frontend gagal connect ke API
+```bash
+# Pastikan backend berjalan
+curl http://localhost:8000/api/status
+```
+
+### Chrome not found
+```bash
+# Cek Chrome di PATH
+which google-chrome
+which chromium
+```
+
+### File PDF tidak muncul
+```bash
+ls -la server/downloads/
 ```
 
 ---

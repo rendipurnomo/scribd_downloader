@@ -4,6 +4,7 @@ import uuid
 import tempfile
 import subprocess
 import re
+import shutil  # <-- tambahkan ini
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,17 @@ from typing import Optional
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
-app = FastAPI(title="Scribd PDF Converter API")
+from contextlib import asynccontextmanager
+
+# ── Lifespan (mengganti on_event) ───────────────────────────────
+@asynccontextmanager
+async def lifespan(app):
+    """Setup & teardown lifecycle untuk FastAPI."""
+    # Awal aplikasi
+    yield
+    # Penyelesaian (opsional)
+
+app = FastAPI(title="Scribd PDF Converter API", lifespan=lifespan)
 
 # ── CORS middleware (izin akses dari frontend) ─────────────
 app.add_middleware(
